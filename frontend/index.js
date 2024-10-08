@@ -1,13 +1,25 @@
 import { backend } from 'declarations/backend';
 import { AuthClient } from '@dfinity/auth-client';
-import { Principal } from '@dfinity/principal';
+import { Actor, HttpAgent } from '@dfinity/agent';
+import { idlFactory } from 'declarations/backend/backend.did.js';
 
 let authClient;
 let userPrincipal;
+let backendActor;
 
 // Helper function to convert timestamp to human-readable format
 function timestampToString(timestamp) {
     return new Date(Number(timestamp) / 1000000).toLocaleString();
+}
+
+// Function to create a new actor with the user's identity
+async function createActor() {
+    const identity = await authClient.getIdentity();
+    const agent = new HttpAgent({ identity });
+    backendActor = Actor.createActor(idlFactory, {
+        agent,
+        canisterId: process.env.CANISTER_ID_BACKEND,
+    });
 }
 
 // Function to initialize authentication
@@ -15,6 +27,7 @@ async function initAuth() {
     authClient = await AuthClient.create();
     if (await authClient.isAuthenticated()) {
         userPrincipal = await authClient.getIdentity().getPrincipal();
+        await createActor();
         handleAuthenticated();
     } else {
         showLoginPrompt();
@@ -33,6 +46,7 @@ async function login() {
 async function logout() {
     await authClient.logout();
     userPrincipal = null;
+    backendActor = null;
     showLoginPrompt();
 }
 
@@ -45,6 +59,7 @@ function showLoginPrompt() {
 // Function to handle authenticated state
 async function handleAuthenticated() {
     userPrincipal = await authClient.getIdentity().getPrincipal();
+    await createActor();
     document.getElementById('loginPrompt').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     refreshUI();
@@ -55,10 +70,10 @@ async function refreshAssets() {
     const assetList = document.getElementById('assetList');
     assetList.innerHTML = '';
 
-    const assetsJson = await backend.getAssets();
+    const assetsJson = await backendActor.getAssets();
     const assets = JSON.parse(assetsJson);
 
-    const userReservationsJson = await backend.getUserReservations(userPrincipal);
+    const userReservationsJson = await backendActor.getUserReservations(userPrincipal);
     const userReservations = JSON.parse(userReservationsJson);
 
     assets.forEach(asset => {
@@ -107,7 +122,7 @@ async function refreshReservations() {
     const reservationList = document.getElementById('reservationList');
     reservationList.innerHTML = '';
 
-    const reservationsJson = await backend.getUserReservations(userPrincipal);
+    const reservationsJson = await backendActor.getUserReservations(userPrincipal);
     const reservations = JSON.parse(reservationsJson);
 
     reservations.forEach(reservation => {
@@ -127,7 +142,7 @@ async function refreshUI() {
 document.getElementById('addAssetForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = document.getElementById('newAssetName').value;
-    await backend.addAsset(name);
+    await backendActor.addAsset(name);
     document.getElementById('newAssetName').value = '';
     refreshUI();
 });
@@ -138,7 +153,7 @@ async function handleReserveAsset(e) {
     const form = e.target;
     const assetId = parseInt(form.elements.assetId.value);
     const timePeriod = form.elements.timePeriod.value;
-    const result = await backend.reserveAsset(assetId, { [timePeriod]: null });
+    const result = await backendActor.reserveAsset(assetId, { [timePeriod]: null });
     if ('ok' in result) {
         alert('Reservation successful!');
         refreshUI();
@@ -150,7 +165,7 @@ async function handleReserveAsset(e) {
 // Handler for removing an asset
 async function handleRemoveAsset(e) {
     const assetId = parseInt(e.target.dataset.id);
-    const result = await backend.removeAsset(assetId);
+    const result = await backendActor.removeAsset(assetId);
     if ('ok' in result) {
         alert('Asset removed successfully!');
         refreshUI();
@@ -162,7 +177,7 @@ async function handleRemoveAsset(e) {
 // Handler for extending a reservation
 async function handleExtendReservation(e) {
     const reservationId = parseInt(e.target.dataset.id);
-    const result = await backend.extendReservation(reservationId);
+    const result = await backendActor.extendReservation(reservationId);
     if ('ok' in result) {
         alert('Reservation extended successfully!');
         refreshUI();
