@@ -43,7 +43,8 @@ function showLoginPrompt() {
 }
 
 // Function to handle authenticated state
-function handleAuthenticated() {
+async function handleAuthenticated() {
+    userPrincipal = await authClient.getIdentity().getPrincipal();
     document.getElementById('loginPrompt').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     refreshUI();
@@ -106,12 +107,12 @@ async function refreshReservations() {
     const reservationList = document.getElementById('reservationList');
     reservationList.innerHTML = '';
 
-    const reservationsJson = await backend.getReservations();
+    const reservationsJson = await backend.getUserReservations(userPrincipal);
     const reservations = JSON.parse(reservationsJson);
 
     reservations.forEach(reservation => {
         const li = document.createElement('li');
-        li.textContent = `Asset ID: ${reservation.assetId}, User: ${reservation.userId}, Start: ${timestampToString(reservation.startTime)}, End: ${timestampToString(reservation.endTime)}, Period: ${reservation.period}`;
+        li.textContent = `Asset ID: ${reservation.assetId}, Start: ${timestampToString(reservation.startTime)}, End: ${timestampToString(reservation.endTime)}, Period: ${reservation.period}`;
         reservationList.appendChild(li);
     });
 }

@@ -133,7 +133,7 @@ actor {
         "[" # Text.join(",", jsonArray.vals()) # "]"
     };
 
-    public func addAsset(name: Text): async Nat {
+    public shared(msg) func addAsset(name: Text): async Nat {
         let id = nextAssetId;
         nextAssetId += 1;
         let newAsset: Asset = { id = id; name = name };
@@ -141,7 +141,7 @@ actor {
         id
     };
 
-    public func removeAsset(id: Nat): async Result.Result<(), Text> {
+    public shared(msg) func removeAsset(id: Nat): async Result.Result<(), Text> {
         if (isAssetReserved(id)) {
             #err("Cannot remove asset. It is currently reserved.")
         } else {
