@@ -1,13 +1,8 @@
 import { backend } from 'declarations/backend';
 
-// Helper function to convert timestamp to datetime-local format
-function timestampToDatetimeLocal(timestamp) {
-    return new Date(Number(timestamp) / 1000000).toISOString().slice(0, 16);
-}
-
-// Helper function to convert datetime-local to timestamp
-function datetimeLocalToTimestamp(datetime) {
-    return BigInt(new Date(datetime).getTime()) * BigInt(1000000);
+// Helper function to convert timestamp to human-readable format
+function timestampToString(timestamp) {
+    return new Date(Number(timestamp) / 1000000).toLocaleString();
 }
 
 // Function to refresh the asset list
@@ -46,12 +41,12 @@ async function refreshReservations() {
 
     reservations.forEach(reservation => {
         const li = document.createElement('li');
-        li.textContent = `Asset ID: ${reservation.assetId}, User: ${reservation.userId}, Start: ${new Date(Number(reservation.startTime) / 1000000).toLocaleString()}, End: ${new Date(Number(reservation.endTime) / 1000000).toLocaleString()}`;
+        li.textContent = `Asset ID: ${reservation.assetId}, User: ${reservation.userId}, Start: ${timestampToString(reservation.startTime)}, End: ${timestampToString(reservation.endTime)}, Period: ${reservation.period}`;
         reservationList.appendChild(li);
 
         const option = document.createElement('option');
         option.value = reservation.id;
-        option.textContent = `Asset ID: ${reservation.assetId}, Start: ${new Date(Number(reservation.startTime) / 1000000).toLocaleString()}`;
+        option.textContent = `Asset ID: ${reservation.assetId}, Start: ${timestampToString(reservation.startTime)}`;
         reservationSelect.appendChild(option);
         cancelReservationSelect.appendChild(option.cloneNode(true));
     });
@@ -70,9 +65,8 @@ document.getElementById('addAssetForm').addEventListener('submit', async (e) => 
 document.getElementById('reserveAssetForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const assetId = parseInt(document.getElementById('assetSelect').value);
-    const startTime = datetimeLocalToTimestamp(document.getElementById('startTime').value);
-    const endTime = datetimeLocalToTimestamp(document.getElementById('endTime').value);
-    const result = await backend.reserveAsset(assetId, startTime, endTime);
+    const timePeriod = document.getElementById('timePeriodSelect').value;
+    const result = await backend.reserveAsset(assetId, { [timePeriod]: null });
     if ('ok' in result) {
         alert('Reservation successful!');
         refreshReservations();
@@ -85,8 +79,7 @@ document.getElementById('reserveAssetForm').addEventListener('submit', async (e)
 document.getElementById('extendReservationForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const reservationId = parseInt(document.getElementById('reservationSelect').value);
-    const newEndTime = datetimeLocalToTimestamp(document.getElementById('newEndTime').value);
-    const result = await backend.extendReservation(reservationId, newEndTime);
+    const result = await backend.extendReservation(reservationId);
     if ('ok' in result) {
         alert('Reservation extended successfully!');
         refreshReservations();

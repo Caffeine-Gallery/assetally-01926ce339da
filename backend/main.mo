@@ -1,6 +1,3 @@
-import Hash "mo:base/Hash";
-import Int "mo:base/Int";
-
 import Array "mo:base/Array";
 import HashMap "mo:base/HashMap";
 import Iter "mo:base/Iter";
@@ -10,6 +7,8 @@ import Principal "mo:base/Principal";
 import Result "mo:base/Result";
 import Text "mo:base/Text";
 import Time "mo:base/Time";
+import Int "mo:base/Int";
+import Hash "mo:base/Hash";
 
 actor {
     // Types
@@ -18,12 +17,19 @@ actor {
         name: Text;
     };
 
+    type TimePeriod = {
+        #OneHour;
+        #EightHours;
+        #OneDay;
+    };
+
     type Reservation = {
         id: Nat;
         assetId: Nat;
         userId: Principal;
         startTime: Time.Time;
         endTime: Time.Time;
+        period: TimePeriod;
     };
 
     // State
@@ -37,12 +43,29 @@ actor {
         "{ \"id\": " # Nat.toText(asset.id) # ", \"name\": \"" # asset.name # "\" }"
     };
 
+    func timePeriodToJson(period: TimePeriod): Text {
+        switch (period) {
+            case (#OneHour) "\"OneHour\"";
+            case (#EightHours) "\"EightHours\"";
+            case (#OneDay) "\"OneDay\"";
+        }
+    };
+
     func reservationToJson(reservation: Reservation): Text {
         "{ \"id\": " # Nat.toText(reservation.id) #
         ", \"assetId\": " # Nat.toText(reservation.assetId) #
         ", \"userId\": \"" # Principal.toText(reservation.userId) # "\"" #
         ", \"startTime\": " # Int.toText(reservation.startTime) #
-        ", \"endTime\": " # Int.toText(reservation.endTime) # " }"
+        ", \"endTime\": " # Int.toText(reservation.endTime) #
+        ", \"period\": " # timePeriodToJson(reservation.period) # " }"
+    };
+
+    func calculateEndTime(startTime: Time.Time, period: TimePeriod): Time.Time {
+        switch (period) {
+            case (#OneHour) startTime + 3600_000_000_000;
+            case (#EightHours) startTime + 28800_000_000_000;
+            case (#OneDay) startTime + 86400_000_000_000;
+        }
     };
 
     // Public functions
@@ -66,7 +89,7 @@ actor {
         id
     };
 
-    public shared(msg) func reserveAsset(assetId: Nat, startTime: Int, endTime: Int): async Result.Result<Nat, Text> {
+    public shared(msg) func reserveAsset(assetId: Nat, period: TimePeriod): async Result.Result<Nat, Text> {
         switch (assets.get(assetId)) {
             case (null) {
                 #err("Asset not found")
@@ -74,12 +97,15 @@ actor {
             case (?asset) {
                 let id = nextReservationId;
                 nextReservationId += 1;
+                let startTime = Time.now();
+                let endTime = calculateEndTime(startTime, period);
                 let newReservation: Reservation = {
                     id = id;
                     assetId = assetId;
                     userId = msg.caller;
                     startTime = startTime;
                     endTime = endTime;
+                    period = period;
                 };
                 reservations.put(id, newReservation);
                 #ok(id)
@@ -87,7 +113,7 @@ actor {
         }
     };
 
-    public shared(msg) func extendReservation(reservationId: Nat, newEndTime: Int): async Result.Result<(), Text> {
+    public shared(msg) func extendReservation(reservationId: Nat): async Result.Result<(), Text> {
         switch (reservations.get(reservationId)) {
             case (null) {
                 #err("Reservation not found")
@@ -96,12 +122,14 @@ actor {
                 if (reservation.userId != msg.caller) {
                     #err("You can only extend your own reservations")
                 } else {
+                    let newEndTime = calculateEndTime(reservation.endTime, reservation.period);
                     let updatedReservation: Reservation = {
                         id = reservation.id;
                         assetId = reservation.assetId;
                         userId = reservation.userId;
                         startTime = reservation.startTime;
                         endTime = newEndTime;
+                        period = reservation.period;
                     };
                     reservations.put(reservationId, updatedReservation);
                     #ok()

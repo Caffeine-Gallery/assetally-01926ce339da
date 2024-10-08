@@ -1,3 +1,9 @@
+type TimePeriod = 
+ variant {
+   EightHours;
+   OneDay;
+   OneHour;
+ };
 type Result_1 = 
  variant {
    err: text;
@@ -11,8 +17,8 @@ type Result =
 service : {
   addAsset: (text) -> (nat);
   cancelReservation: (nat) -> (Result_1);
-  extendReservation: (nat, int) -> (Result_1);
+  extendReservation: (nat) -> (Result_1);
   getAssets: () -> (text) query;
   getReservations: () -> (text) query;
-  reserveAsset: (nat, int, int) -> (Result);
+  reserveAsset: (nat, TimePeriod) -> (Result);
 }

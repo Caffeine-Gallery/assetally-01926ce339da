@@ -27,13 +27,15 @@
         <h2>Actions</h2>
         <form id="reserveAssetForm">
             <select id="assetSelect" required></select>
-            <input type="datetime-local" id="startTime" required>
-            <input type="datetime-local" id="endTime" required>
+            <select id="timePeriodSelect" required>
+                <option value="OneHour">1 Hour</option>
+                <option value="EightHours">8 Hours</option>
+                <option value="OneDay">1 Day</option>
+            </select>
             <button type="submit">Reserve Asset</button>
         </form>
         <form id="extendReservationForm">
             <select id="reservationSelect" required></select>
-            <input type="datetime-local" id="newEndTime" required>
             <button type="submit">Extend Reservation</button>
         </form>
         <form id="cancelReservationForm">
