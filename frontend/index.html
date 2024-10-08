@@ -19,29 +19,8 @@
     </section>
 
     <section id="reservations">
-        <h2>Reservations</h2>
+        <h2>Current Reservations</h2>
         <ul id="reservationList"></ul>
-    </section>
-
-    <section id="actions">
-        <h2>Actions</h2>
-        <form id="reserveAssetForm">
-            <select id="assetSelect" required></select>
-            <select id="timePeriodSelect" required>
-                <option value="OneHour">1 Hour</option>
-                <option value="EightHours">8 Hours</option>
-                <option value="OneDay">1 Day</option>
-            </select>
-            <button type="submit">Reserve Asset</button>
-        </form>
-        <form id="extendReservationForm">
-            <select id="reservationSelect" required></select>
-            <button type="submit">Extend Reservation</button>
-        </form>
-        <form id="cancelReservationForm">
-            <select id="cancelReservationSelect" required></select>
-            <button type="submit">Cancel Reservation</button>
-        </form>
     </section>
 
     <script type="module" src="index.js"></script>

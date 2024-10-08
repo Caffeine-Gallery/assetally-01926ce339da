@@ -20,11 +20,13 @@ ul {
 
 li {
     margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
 }
 
 form {
     display: flex;
-    flex-direction: column;
     gap: 10px;
     margin-top: 10px;
 }
@@ -40,8 +42,27 @@ button {
     color: white;
     border: none;
     padding: 10px;
+    border-radius: 5px;
 }
 
 button:hover {
     background-color: #45a049;
+}
+
+.reserved {
+    color: #ff0000;
+    font-weight: bold;
+}
+
+.remove-asset {
+    background-color: #f44336;
+}
+
+.remove-asset:hover {
+    background-color: #d32f2f;
+}
+
+.reserve-form {
+    display: inline-flex;
+    gap: 5px;
 }

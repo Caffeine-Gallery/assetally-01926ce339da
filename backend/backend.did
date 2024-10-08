@@ -20,5 +20,6 @@ service : {
   extendReservation: (nat) -> (Result_1);
   getAssets: () -> (text) query;
   getReservations: () -> (text) query;
+  removeAsset: (nat) -> (Result_1);
   reserveAsset: (nat, TimePeriod) -> (Result);
 }

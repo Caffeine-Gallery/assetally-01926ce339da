@@ -1,3 +1,5 @@
+import Bool "mo:base/Bool";
+
 import Array "mo:base/Array";
 import HashMap "mo:base/HashMap";
 import Iter "mo:base/Iter";
@@ -68,10 +70,39 @@ actor {
         }
     };
 
+    func isAssetReserved(assetId: Nat): Bool {
+        let currentTime = Time.now();
+        for (reservation in reservations.vals()) {
+            if (reservation.assetId == assetId and reservation.endTime > currentTime) {
+                return true;
+            };
+        };
+        false
+    };
+
+    func getAssetReservationStatus(assetId: Nat): ?Reservation {
+        let currentTime = Time.now();
+        for (reservation in reservations.vals()) {
+            if (reservation.assetId == assetId and reservation.endTime > currentTime) {
+                return ?reservation;
+            };
+        };
+        null
+    };
+
     // Public functions
     public query func getAssets(): async Text {
         let assetArray = Iter.toArray(assets.vals());
-        let jsonArray = Array.map(assetArray, assetToJson);
+        let jsonArray = Array.map(assetArray, func (asset: Asset): Text {
+            let reservationStatus = getAssetReservationStatus(asset.id);
+            let statusJson = switch (reservationStatus) {
+                case (null) "null";
+                case (?reservation) reservationToJson(reservation);
+            };
+            "{ \"id\": " # Nat.toText(asset.id) # 
+            ", \"name\": \"" # asset.name # "\"" #
+            ", \"reservationStatus\": " # statusJson # " }"
+        });
         "[" # Text.join(",", jsonArray.vals()) # "]"
     };
 
@@ -89,26 +120,39 @@ actor {
         id
     };
 
+    public func removeAsset(id: Nat): async Result.Result<(), Text> {
+        if (isAssetReserved(id)) {
+            #err("Cannot remove asset. It is currently reserved.")
+        } else {
+            assets.delete(id);
+            #ok()
+        }
+    };
+
     public shared(msg) func reserveAsset(assetId: Nat, period: TimePeriod): async Result.Result<Nat, Text> {
         switch (assets.get(assetId)) {
             case (null) {
                 #err("Asset not found")
             };
             case (?asset) {
-                let id = nextReservationId;
-                nextReservationId += 1;
-                let startTime = Time.now();
-                let endTime = calculateEndTime(startTime, period);
-                let newReservation: Reservation = {
-                    id = id;
-                    assetId = assetId;
-                    userId = msg.caller;
-                    startTime = startTime;
-                    endTime = endTime;
-                    period = period;
-                };
-                reservations.put(id, newReservation);
-                #ok(id)
+                if (isAssetReserved(assetId)) {
+                    #err("Asset is already reserved")
+                } else {
+                    let id = nextReservationId;
+                    nextReservationId += 1;
+                    let startTime = Time.now();
+                    let endTime = calculateEndTime(startTime, period);
+                    let newReservation: Reservation = {
+                        id = id;
+                        assetId = assetId;
+                        userId = msg.caller;
+                        startTime = startTime;
+                        endTime = endTime;
+                        period = period;
+                    };
+                    reservations.put(id, newReservation);
+                    #ok(id)
+                }
             };
         }
     };

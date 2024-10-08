@@ -12,6 +12,7 @@ export const idlFactory = ({ IDL }) => {
     'extendReservation' : IDL.Func([IDL.Nat], [Result_1], []),
     'getAssets' : IDL.Func([], [IDL.Text], ['query']),
     'getReservations' : IDL.Func([], [IDL.Text], ['query']),
+    'removeAsset' : IDL.Func([IDL.Nat], [Result_1], []),
     'reserveAsset' : IDL.Func([IDL.Nat, TimePeriod], [Result], []),
   });
 };
