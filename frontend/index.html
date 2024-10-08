@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Reservation System</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <h1>Asset Reservation System</h1>
+    
+    <section id="assets">
+        <h2>Assets</h2>
+        <ul id="assetList"></ul>
+        <form id="addAssetForm">
+            <input type="text" id="newAssetName" placeholder="New asset name" required>
+            <button type="submit">Add Asset</button>
+        </form>
+    </section>
+
+    <section id="reservations">
+        <h2>Reservations</h2>
+        <ul id="reservationList"></ul>
+    </section>
+
+    <section id="actions">
+        <h2>Actions</h2>
+        <form id="reserveAssetForm">
+            <select id="assetSelect" required></select>
+            <input type="datetime-local" id="startTime" required>
+            <input type="datetime-local" id="endTime" required>
+            <button type="submit">Reserve Asset</button>
+        </form>
+        <form id="extendReservationForm">
+            <select id="reservationSelect" required></select>
+            <input type="datetime-local" id="newEndTime" required>
+            <button type="submit">Extend Reservation</button>
+        </form>
+        <form id="cancelReservationForm">
+            <select id="cancelReservationSelect" required></select>
+            <button type="submit">Cancel Reservation</button>
+        </form>
+    </section>
+
+    <script type="module" src="index.js"></script>
+</body>
+</html>

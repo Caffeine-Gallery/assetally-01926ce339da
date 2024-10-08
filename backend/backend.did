@@ -1,0 +1,18 @@
+type Result_1 = 
+ variant {
+   err: text;
+   ok;
+ };
+type Result = 
+ variant {
+   err: text;
+   ok: nat;
+ };
+service : {
+  addAsset: (text) -> (nat);
+  cancelReservation: (nat) -> (Result_1);
+  extendReservation: (nat, int) -> (Result_1);
+  getAssets: () -> (text) query;
+  getReservations: () -> (text) query;
+  reserveAsset: (nat, int, int) -> (Result);
+}
