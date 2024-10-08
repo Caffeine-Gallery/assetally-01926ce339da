@@ -16,9 +16,13 @@ function timestampToString(timestamp) {
 async function createActor() {
     const identity = await authClient.getIdentity();
     const agent = new HttpAgent({ identity });
+    const canisterId = import.meta.env.CANISTER_ID_BACKEND;
+    if (!canisterId) {
+        throw new Error('Backend canister ID not found in environment variables');
+    }
     backendActor = Actor.createActor(idlFactory, {
         agent,
-        canisterId: process.env.CANISTER_ID_BACKEND,
+        canisterId: canisterId,
     });
 }
 
@@ -70,51 +74,56 @@ async function refreshAssets() {
     const assetList = document.getElementById('assetList');
     assetList.innerHTML = '';
 
-    const assetsJson = await backendActor.getAssets();
-    const assets = JSON.parse(assetsJson);
+    try {
+        const assetsJson = await backendActor.getAssets();
+        const assets = JSON.parse(assetsJson);
 
-    const userReservationsJson = await backendActor.getUserReservations(userPrincipal);
-    const userReservations = JSON.parse(userReservationsJson);
+        const userReservationsJson = await backendActor.getUserReservations(userPrincipal);
+        const userReservations = JSON.parse(userReservationsJson);
 
-    assets.forEach(asset => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-            <span>${asset.name} (ID: ${asset.id})</span>
-            ${asset.reservationStatus ? 
-                `<span class="reserved">Reserved by ${asset.reservationStatus.userId} until ${timestampToString(asset.reservationStatus.endTime)}</span>
-                 ${asset.reservationStatus.userId === userPrincipal.toText() ? 
-                    `<button class="extend-reservation" data-id="${asset.reservationStatus.id}">Extend Reservation</button>` : 
-                    ''
-                 }` :
-                `<form class="reserve-form">
-                    <input type="hidden" name="assetId" value="${asset.id}">
-                    <select name="timePeriod" required>
-                        <option value="OneHour">1 Hour</option>
-                        <option value="EightHours">8 Hours</option>
-                        <option value="OneDay">1 Day</option>
-                    </select>
-                    <button type="submit">Reserve</button>
-                </form>`
-            }
-            <button class="remove-asset" data-id="${asset.id}">Remove</button>
-        `;
-        assetList.appendChild(li);
-    });
+        assets.forEach(asset => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <span>${asset.name} (ID: ${asset.id})</span>
+                ${asset.reservationStatus ? 
+                    `<span class="reserved">Reserved by ${asset.reservationStatus.userId} until ${timestampToString(asset.reservationStatus.endTime)}</span>
+                     ${asset.reservationStatus.userId === userPrincipal.toText() ? 
+                        `<button class="extend-reservation" data-id="${asset.reservationStatus.id}">Extend Reservation</button>` : 
+                        ''
+                     }` :
+                    `<form class="reserve-form">
+                        <input type="hidden" name="assetId" value="${asset.id}">
+                        <select name="timePeriod" required>
+                            <option value="OneHour">1 Hour</option>
+                            <option value="EightHours">8 Hours</option>
+                            <option value="OneDay">1 Day</option>
+                        </select>
+                        <button type="submit">Reserve</button>
+                    </form>`
+                }
+                <button class="remove-asset" data-id="${asset.id}">Remove</button>
+            `;
+            assetList.appendChild(li);
+        });
 
-    // Add event listeners for reserve forms
-    document.querySelectorAll('.reserve-form').forEach(form => {
-        form.addEventListener('submit', handleReserveAsset);
-    });
+        // Add event listeners for reserve forms
+        document.querySelectorAll('.reserve-form').forEach(form => {
+            form.addEventListener('submit', handleReserveAsset);
+        });
 
-    // Add event listeners for remove buttons
-    document.querySelectorAll('.remove-asset').forEach(button => {
-        button.addEventListener('click', handleRemoveAsset);
-    });
+        // Add event listeners for remove buttons
+        document.querySelectorAll('.remove-asset').forEach(button => {
+            button.addEventListener('click', handleRemoveAsset);
+        });
 
-    // Add event listeners for extend reservation buttons
-    document.querySelectorAll('.extend-reservation').forEach(button => {
-        button.addEventListener('click', handleExtendReservation);
-    });
+        // Add event listeners for extend reservation buttons
+        document.querySelectorAll('.extend-reservation').forEach(button => {
+            button.addEventListener('click', handleExtendReservation);
+        });
+    } catch (error) {
+        console.error('Error refreshing assets:', error);
+        alert('Failed to load assets. Please try again later.');
+    }
 }
 
 // Function to refresh the reservation list
@@ -122,14 +131,19 @@ async function refreshReservations() {
     const reservationList = document.getElementById('reservationList');
     reservationList.innerHTML = '';
 
-    const reservationsJson = await backendActor.getUserReservations(userPrincipal);
-    const reservations = JSON.parse(reservationsJson);
+    try {
+        const reservationsJson = await backendActor.getUserReservations(userPrincipal);
+        const reservations = JSON.parse(reservationsJson);
 
-    reservations.forEach(reservation => {
-        const li = document.createElement('li');
-        li.textContent = `Asset ID: ${reservation.assetId}, Start: ${timestampToString(reservation.startTime)}, End: ${timestampToString(reservation.endTime)}, Period: ${reservation.period}`;
-        reservationList.appendChild(li);
-    });
+        reservations.forEach(reservation => {
+            const li = document.createElement('li');
+            li.textContent = `Asset ID: ${reservation.assetId}, Start: ${timestampToString(reservation.startTime)}, End: ${timestampToString(reservation.endTime)}, Period: ${reservation.period}`;
+            reservationList.appendChild(li);
+        });
+    } catch (error) {
+        console.error('Error refreshing reservations:', error);
+        alert('Failed to load reservations. Please try again later.');
+    }
 }
 
 // Function to refresh the entire UI
@@ -142,9 +156,14 @@ async function refreshUI() {
 document.getElementById('addAssetForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = document.getElementById('newAssetName').value;
-    await backendActor.addAsset(name);
-    document.getElementById('newAssetName').value = '';
-    refreshUI();
+    try {
+        await backendActor.addAsset(name);
+        document.getElementById('newAssetName').value = '';
+        refreshUI();
+    } catch (error) {
+        console.error('Error adding asset:', error);
+        alert('Failed to add asset. Please try again.');
+    }
 });
 
 // Handler for reserving an asset
@@ -153,36 +172,51 @@ async function handleReserveAsset(e) {
     const form = e.target;
     const assetId = parseInt(form.elements.assetId.value);
     const timePeriod = form.elements.timePeriod.value;
-    const result = await backendActor.reserveAsset(assetId, { [timePeriod]: null });
-    if ('ok' in result) {
-        alert('Reservation successful!');
-        refreshUI();
-    } else {
-        alert(`Reservation failed: ${result.err}`);
+    try {
+        const result = await backendActor.reserveAsset(assetId, { [timePeriod]: null });
+        if ('ok' in result) {
+            alert('Reservation successful!');
+            refreshUI();
+        } else {
+            alert(`Reservation failed: ${result.err}`);
+        }
+    } catch (error) {
+        console.error('Error reserving asset:', error);
+        alert('Failed to reserve asset. Please try again.');
     }
 }
 
 // Handler for removing an asset
 async function handleRemoveAsset(e) {
     const assetId = parseInt(e.target.dataset.id);
-    const result = await backendActor.removeAsset(assetId);
-    if ('ok' in result) {
-        alert('Asset removed successfully!');
-        refreshUI();
-    } else {
-        alert(`Asset removal failed: ${result.err}`);
+    try {
+        const result = await backendActor.removeAsset(assetId);
+        if ('ok' in result) {
+            alert('Asset removed successfully!');
+            refreshUI();
+        } else {
+            alert(`Asset removal failed: ${result.err}`);
+        }
+    } catch (error) {
+        console.error('Error removing asset:', error);
+        alert('Failed to remove asset. Please try again.');
     }
 }
 
 // Handler for extending a reservation
 async function handleExtendReservation(e) {
     const reservationId = parseInt(e.target.dataset.id);
-    const result = await backendActor.extendReservation(reservationId);
-    if ('ok' in result) {
-        alert('Reservation extended successfully!');
-        refreshUI();
-    } else {
-        alert(`Extension failed: ${result.err}`);
+    try {
+        const result = await backendActor.extendReservation(reservationId);
+        if ('ok' in result) {
+            alert('Reservation extended successfully!');
+            refreshUI();
+        } else {
+            alert(`Extension failed: ${result.err}`);
+        }
+    } catch (error) {
+        console.error('Error extending reservation:', error);
+        alert('Failed to extend reservation. Please try again.');
     }
 }
 
@@ -191,4 +225,7 @@ document.getElementById('loginButton').addEventListener('click', login);
 document.getElementById('logoutButton').addEventListener('click', logout);
 
 // Initialize authentication and UI
-initAuth();
+initAuth().catch(error => {
+    console.error('Initialization error:', error);
+    alert('Failed to initialize the application. Please refresh the page and try again.');
+});
