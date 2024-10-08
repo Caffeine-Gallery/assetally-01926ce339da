@@ -88,3 +88,13 @@ button:hover {
 #loginButton:hover, #logoutButton:hover {
     background-color: #1976D2;
 }
+
+#loginPrompt {
+    text-align: center;
+    margin-top: 50px;
+}
+
+#loginPrompt button {
+    font-size: 18px;
+    padding: 15px 30px;
+}

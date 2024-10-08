@@ -16,6 +16,8 @@ async function initAuth() {
     if (await authClient.isAuthenticated()) {
         userPrincipal = await authClient.getIdentity().getPrincipal();
         handleAuthenticated();
+    } else {
+        showLoginPrompt();
     }
 }
 
@@ -31,15 +33,19 @@ async function login() {
 async function logout() {
     await authClient.logout();
     userPrincipal = null;
-    document.getElementById('loginButton').style.display = 'block';
-    document.getElementById('logoutButton').style.display = 'none';
-    refreshUI();
+    showLoginPrompt();
+}
+
+// Function to show login prompt
+function showLoginPrompt() {
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('loginPrompt').style.display = 'block';
 }
 
 // Function to handle authenticated state
 function handleAuthenticated() {
-    document.getElementById('loginButton').style.display = 'none';
-    document.getElementById('logoutButton').style.display = 'block';
+    document.getElementById('loginPrompt').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
     refreshUI();
 }
 
@@ -169,4 +175,4 @@ document.getElementById('loginButton').addEventListener('click', login);
 document.getElementById('logoutButton').addEventListener('click', logout);
 
 // Initialize authentication and UI
-initAuth().then(() => refreshUI());
+initAuth();

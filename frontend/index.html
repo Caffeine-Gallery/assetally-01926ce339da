@@ -7,26 +7,32 @@
     <link rel="stylesheet" href="index.css">
 </head>
 <body>
-    <h1>Asset Reservation System</h1>
-    
-    <section id="auth">
-        <button id="loginButton">Login</button>
-        <button id="logoutButton" style="display: none;">Logout</button>
-    </section>
+    <div id="app" style="display: none;">
+        <h1>Asset Reservation System</h1>
+        
+        <section id="auth">
+            <button id="logoutButton">Logout</button>
+        </section>
 
-    <section id="assets">
-        <h2>Assets</h2>
-        <ul id="assetList"></ul>
-        <form id="addAssetForm">
-            <input type="text" id="newAssetName" placeholder="New asset name" required>
-            <button type="submit">Add Asset</button>
-        </form>
-    </section>
+        <section id="assets">
+            <h2>Assets</h2>
+            <ul id="assetList"></ul>
+            <form id="addAssetForm">
+                <input type="text" id="newAssetName" placeholder="New asset name" required>
+                <button type="submit">Add Asset</button>
+            </form>
+        </section>
 
-    <section id="reservations">
-        <h2>Current Reservations</h2>
-        <ul id="reservationList"></ul>
-    </section>
+        <section id="reservations">
+            <h2>Current Reservations</h2>
+            <ul id="reservationList"></ul>
+        </section>
+    </div>
+
+    <div id="loginPrompt">
+        <h2>Please log in to use the Asset Reservation System</h2>
+        <button id="loginButton">Login with Internet Identity</button>
+    </div>
 
     <script type="module" src="index.js"></script>
 </body>
