@@ -66,3 +66,25 @@ button:hover {
     display: inline-flex;
     gap: 5px;
 }
+
+.extend-reservation {
+    background-color: #2196F3;
+}
+
+.extend-reservation:hover {
+    background-color: #1976D2;
+}
+
+#auth {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+}
+
+#loginButton, #logoutButton {
+    background-color: #2196F3;
+}
+
+#loginButton:hover, #logoutButton:hover {
+    background-color: #1976D2;
+}

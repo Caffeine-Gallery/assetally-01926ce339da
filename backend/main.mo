@@ -34,11 +34,26 @@ actor {
         period: TimePeriod;
     };
 
-    // State
+    // Stable storage
     stable var nextAssetId: Nat = 0;
     stable var nextReservationId: Nat = 0;
-    let assets = HashMap.HashMap<Nat, Asset>(10, Nat.equal, Hash.hash);
-    let reservations = HashMap.HashMap<Nat, Reservation>(10, Nat.equal, Hash.hash);
+    stable var stableAssets: [(Nat, Asset)] = [];
+    stable var stableReservations: [(Nat, Reservation)] = [];
+
+    // Runtime storage
+    var assets = HashMap.fromIter<Nat, Asset>(stableAssets.vals(), 10, Nat.equal, Hash.hash);
+    var reservations = HashMap.fromIter<Nat, Reservation>(stableReservations.vals(), 10, Nat.equal, Hash.hash);
+
+    // Upgrade hooks
+    system func preupgrade() {
+        stableAssets := Iter.toArray(assets.entries());
+        stableReservations := Iter.toArray(reservations.entries());
+    };
+
+    system func postupgrade() {
+        assets := HashMap.fromIter<Nat, Asset>(stableAssets.vals(), 10, Nat.equal, Hash.hash);
+        reservations := HashMap.fromIter<Nat, Reservation>(stableReservations.vals(), 10, Nat.equal, Hash.hash);
+    };
 
     // Helper functions
     func assetToJson(asset: Asset): Text {
@@ -109,6 +124,12 @@ actor {
     public query func getReservations(): async Text {
         let reservationArray = Iter.toArray(reservations.vals());
         let jsonArray = Array.map(reservationArray, reservationToJson);
+        "[" # Text.join(",", jsonArray.vals()) # "]"
+    };
+
+    public query func getUserReservations(userId: Principal): async Text {
+        let userReservations = Array.filter(Iter.toArray(reservations.vals()), func (r: Reservation): Bool { r.userId == userId });
+        let jsonArray = Array.map(userReservations, reservationToJson);
         "[" # Text.join(",", jsonArray.vals()) # "]"
     };
 

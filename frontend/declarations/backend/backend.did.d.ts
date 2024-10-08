@@ -15,6 +15,7 @@ export interface _SERVICE {
   'extendReservation' : ActorMethod<[bigint], Result_1>,
   'getAssets' : ActorMethod<[], string>,
   'getReservations' : ActorMethod<[], string>,
+  'getUserReservations' : ActorMethod<[Principal], string>,
   'removeAsset' : ActorMethod<[bigint], Result_1>,
   'reserveAsset' : ActorMethod<[bigint, TimePeriod], Result>,
 }

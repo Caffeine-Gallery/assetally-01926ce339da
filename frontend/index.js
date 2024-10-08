@@ -1,8 +1,46 @@
 import { backend } from 'declarations/backend';
+import { AuthClient } from '@dfinity/auth-client';
+import { Principal } from '@dfinity/principal';
+
+let authClient;
+let userPrincipal;
 
 // Helper function to convert timestamp to human-readable format
 function timestampToString(timestamp) {
     return new Date(Number(timestamp) / 1000000).toLocaleString();
+}
+
+// Function to initialize authentication
+async function initAuth() {
+    authClient = await AuthClient.create();
+    if (await authClient.isAuthenticated()) {
+        userPrincipal = await authClient.getIdentity().getPrincipal();
+        handleAuthenticated();
+    }
+}
+
+// Function to handle login
+async function login() {
+    await authClient.login({
+        identityProvider: "https://identity.ic0.app/#authorize",
+        onSuccess: handleAuthenticated,
+    });
+}
+
+// Function to handle logout
+async function logout() {
+    await authClient.logout();
+    userPrincipal = null;
+    document.getElementById('loginButton').style.display = 'block';
+    document.getElementById('logoutButton').style.display = 'none';
+    refreshUI();
+}
+
+// Function to handle authenticated state
+function handleAuthenticated() {
+    document.getElementById('loginButton').style.display = 'none';
+    document.getElementById('logoutButton').style.display = 'block';
+    refreshUI();
 }
 
 // Function to refresh the asset list
@@ -13,12 +51,19 @@ async function refreshAssets() {
     const assetsJson = await backend.getAssets();
     const assets = JSON.parse(assetsJson);
 
+    const userReservationsJson = await backend.getUserReservations(userPrincipal);
+    const userReservations = JSON.parse(userReservationsJson);
+
     assets.forEach(asset => {
         const li = document.createElement('li');
         li.innerHTML = `
             <span>${asset.name} (ID: ${asset.id})</span>
             ${asset.reservationStatus ? 
-                `<span class="reserved">Reserved by ${asset.reservationStatus.userId} until ${timestampToString(asset.reservationStatus.endTime)}</span>` :
+                `<span class="reserved">Reserved by ${asset.reservationStatus.userId} until ${timestampToString(asset.reservationStatus.endTime)}</span>
+                 ${asset.reservationStatus.userId === userPrincipal.toText() ? 
+                    `<button class="extend-reservation" data-id="${asset.reservationStatus.id}">Extend Reservation</button>` : 
+                    ''
+                 }` :
                 `<form class="reserve-form">
                     <input type="hidden" name="assetId" value="${asset.id}">
                     <select name="timePeriod" required>
@@ -43,6 +88,11 @@ async function refreshAssets() {
     document.querySelectorAll('.remove-asset').forEach(button => {
         button.addEventListener('click', handleRemoveAsset);
     });
+
+    // Add event listeners for extend reservation buttons
+    document.querySelectorAll('.extend-reservation').forEach(button => {
+        button.addEventListener('click', handleExtendReservation);
+    });
 }
 
 // Function to refresh the reservation list
@@ -60,13 +110,19 @@ async function refreshReservations() {
     });
 }
 
+// Function to refresh the entire UI
+async function refreshUI() {
+    await refreshAssets();
+    await refreshReservations();
+}
+
 // Event listener for adding a new asset
 document.getElementById('addAssetForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = document.getElementById('newAssetName').value;
     await backend.addAsset(name);
     document.getElementById('newAssetName').value = '';
-    refreshAssets();
+    refreshUI();
 });
 
 // Handler for reserving an asset
@@ -78,8 +134,7 @@ async function handleReserveAsset(e) {
     const result = await backend.reserveAsset(assetId, { [timePeriod]: null });
     if ('ok' in result) {
         alert('Reservation successful!');
-        refreshAssets();
-        refreshReservations();
+        refreshUI();
     } else {
         alert(`Reservation failed: ${result.err}`);
     }
@@ -91,12 +146,27 @@ async function handleRemoveAsset(e) {
     const result = await backend.removeAsset(assetId);
     if ('ok' in result) {
         alert('Asset removed successfully!');
-        refreshAssets();
+        refreshUI();
     } else {
         alert(`Asset removal failed: ${result.err}`);
     }
 }
 
-// Initial refresh of assets and reservations
-refreshAssets();
-refreshReservations();
+// Handler for extending a reservation
+async function handleExtendReservation(e) {
+    const reservationId = parseInt(e.target.dataset.id);
+    const result = await backend.extendReservation(reservationId);
+    if ('ok' in result) {
+        alert('Reservation extended successfully!');
+        refreshUI();
+    } else {
+        alert(`Extension failed: ${result.err}`);
+    }
+}
+
+// Event listeners for login and logout
+document.getElementById('loginButton').addEventListener('click', login);
+document.getElementById('logoutButton').addEventListener('click', logout);
+
+// Initialize authentication and UI
+initAuth().then(() => refreshUI());
